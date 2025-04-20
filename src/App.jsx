@@ -1,11 +1,13 @@
 import "./App.css";
-import MainList from "./components/MainList";
+import Mercado from "./components/Mercado";
+import Drinks from "./components/typeofItens/Drinks";
+import Mercearia from "./components/typeofItens/Mercearia";
 
 function App() {
   return (
-    <>
-      <MainList />
-    </>
+    <div className="Main"> 
+      <Mercado />
+    </div>
   );
 }
 

@@ -1,43 +1,45 @@
 import { useState } from "react";
+import MainList from "../MainList";
+import { MdDeleteOutline } from "react-icons/md";
 
-function ShoppingLimpeza({ Limpeza, index, onDelete, onEdit }) {
+function ShoppingLimpeza({ item, index, onDelete, onEdit, onToggle }) {
   return (
-    <div className="flex gap-2 mb-2">
-      <input type="checkbox" className="check" />
+    <div className={item.marcado ? "checked" : "unchecked"}>
+      <input
+        type="checkbox"
+        checked={item.marcado}
+        onChange={() => onToggle(index)}
+        className="check"
+      />
       <input
         type="text"
-        value={Limpeza}
+        value={item.nome}
         onChange={(e) => onEdit(index, e.target.value)}
-        className="border px-2 rounded"
       />
-      <button
-        onClick={() => onDelete(index)}
-        className="bg-red-200 px-2 rounded"
-      >
-        X
+      <button onClick={() => onDelete(index)}>
+        <MdDeleteOutline />
       </button>
     </div>
   );
 }
 
 export default function Limpeza() {
-
-  const[limpeza,setLimpeza] = useState([
-    "Água Sanitária",
-    "Álcool em gel",
-    "Amaciante",
-    "Desinfetante",
-    "Detergente",
-    "Esponja de aço",
-    "Esponja de pia",
-    "Flanelas",
-    "Inseticida",
-    "Lustra-móveis",
-    "Luvas plásticas",
-    "Sabão em barra",
-    "Sabão em pó",
-    "Sacos de lixo",
-    "Álcool 90%",
+  const [limpeza, setLimpeza] = useState([
+    { nome: "Água Sanitária", marcado: false },
+    { nome: "Álcool em gel", marcado: false },
+    { nome: "Amaciante", marcado: false },
+    { nome: "Desinfetante", marcado: false },
+    { nome: "Detergente", marcado: false },
+    { nome: "Esponja de aço", marcado: false },
+    { nome: "Esponja de pia", marcado: false },
+    { nome: "Flanelas", marcado: false },
+    { nome: "Inseticida", marcado: false },
+    { nome: "Lustra-móveis", marcado: false },
+    { nome: "Luvas plásticas", marcado: false },
+    { nome: "Sabão em barra", marcado: false },
+    { nome: "Sabão em pó", marcado: false },
+    { nome: "Sacos de lixo", marcado: false },
+    { nome: "Álcool 90%", marcado: false },
   ]);
 
   const handleDelete = (index) => {
@@ -47,26 +49,32 @@ export default function Limpeza() {
 
   const handleEdit = (index, novoValor) => {
     const novaLista = [...limpeza];
-    novaLista[index] = novoValor;
+    novaLista[index].nome = novoValor;
+    setLimpeza(novaLista);
+  };
+
+  const handleToggle = (index) => {
+    const novaLista = [...limpeza];
+    novaLista[index].marcado = !novaLista[index].marcado;
     setLimpeza(novaLista);
   };
 
   return (
     <div>
-      <div className="bg-sky-50 rounded-2xl p-5">
-        <h2 className="text-3xl mb-4">Limpeza</h2>
-
-        {limpeza.map((Limpeza, index) => (
+      <div className="max-w-82 flex flex-col bg-sky-200 p-1 justify-center rounded-sm mb-1 text-center">
+        <h2 className="text-3xl mb-4 text-gray-800 border-b-1">Limpeza</h2>
+        <MainList />
+        {limpeza.map((item, index) => (
           <ShoppingLimpeza
             key={index}
-            Limpeza={Limpeza}
+            item={item}
             index={index}
             onDelete={handleDelete}
             onEdit={handleEdit}
+            onToggle={handleToggle}
           />
         ))}
       </div>
-     
     </div>
   );
 }

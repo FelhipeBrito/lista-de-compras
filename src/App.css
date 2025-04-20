@@ -1,31 +1,107 @@
 @import "tailwindcss";
-
-:root {
-  width: 100%;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0 auto;
-  background-color: #ccc;
-  text-align: center;
-  color: rgba(11, 11, 235, 0.712);
+body{
+    background-color: #7ba5a3;
+}
+.Main{
+    display: flex;
+    padding: 30px;
 }
 
-/* Estilo padrão (desktop/tablet) */
-.container {
-  padding: 40px;
-  font-size: 18px;
-  display: flex;
-  justify-content: space-between;
+.main-container2{
+    display: flex;
+    margin: 0 auto;
+    gap: 8px;
+    
 }
 
-/* Estilo para dispositivos móveis */
-@media (max-width: 768px) {
-  .container {
-    padding: 20px;
-    font-size: 16px;
-    flex-direction: column;
-    align-items: center;
-  }
+.checked,
+.unchecked{
+    max-width: 280px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    margin-bottom: 4px;
+}
+.checked{
+    padding: 4px;
+    background-color: rgba(13, 224, 83, 0.76);
+    border-radius: 4px;
+    color: #fff;
+    input{
+        text-align: center;
+        accent-color: blue;
+        outline: none;
+        border: 1px solid;
+        border-radius: 12px;
+        padding: 2px;
+    }
+    button{
+        background-color: rgb(212, 18, 18);
+        padding: 4px;
+        border-radius: 4px;
+        color: #222;
+    }
+    button:hover{
+        cursor: pointer;
+        background-color: rgb(255, 0, 0);
+        
+    }
+    
+}
+.unchecked{
+    input{
+        outline: none;
+        border: 1px solid;
+        border-radius: 12px;
+        padding: 2px;
+    }
+    button{
+        background-color: rgba(235, 13, 13, 0.938);
+        padding: 4px;
+        border-radius: 4px;
+        color: #222;
+    }
+    button:hover{
+        cursor: pointer;
+        background-color: red;
+        
+    }
+} 
+
+
+@media screen and (min-width:270px) and (max-width:475px) {
+    .Main{
+        width: 95%;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    .main-container2{
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+    }
+}
+@media screen and (min-width:600px) and (max-width:999px) {
+    .Main{
+        display: flex;
+        flex-direction: column;
+    }
+    .main-container2{
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+@media screen and (max-width:599px) and (min-width:476) {
+    .Main{
+        display: flex;
+        flex-direction: column;
+    }
+    .main-container2{
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+    }
 }

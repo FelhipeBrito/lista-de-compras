@@ -1,60 +1,33 @@
-import { useState } from "react";
+import { MdDeleteOutline } from "react-icons/md";
 
-function ShoppingItem({ item, index, onDelete, onEdit }) {
-  return (
-    <div className="flex gap-2 mb-2">
-      <input type="checkbox" className="check" />
-      <input
-        type="text"
-        value={item}
-        onChange={(e) => onEdit(index, e.target.value)}
-        className="border px-2 rounded"
-      />
-      <button
-        onClick={() => onDelete(index)}
-        className="bg-red-200 px-2 rounded"
-      >
-        Excluir
+export default function Item({
+  texto,
+  marcado,
+  onToggle,
+  onChangeTexto,
+  onDelete,
+}){
+  return(
+    <div className={marcado ? "checked" : "unchecked"}>
+      <label htmlFor="checkbox-item">
+        <input
+        type="checkbox"
+        id="checkbox-item"
+        onChange={onToggle}
+        checked={marcado}
+        />
+      </label>
+      <input 
+      type="text"
+      value={texto}
+      onChange={(e) => onChangeTexto(e.target.value)}
+      placeholder="item" 
+      className="border-1 px-4 rounded-2xl mb-1"/>
+      <button onClick={onDelete}
+      className="bg-red-500 px-2 rounded cursor-pointer">
+      <MdDeleteOutline />
       </button>
+      
     </div>
-  );
-}
-
-export default function Item() {
-  const [bebidas, setBebidas] = useState([
-    "Água",
-    "Suco",
-    "Refrigerante",
-    "Cerveja",
-  ]);
-
-  const handleDelete = (index) => {
-    const novaLista = bebidas.filter((_, i) => i !== index);
-    setBebidas(novaLista);
-  };
-
-  const handleEdit = (index, novoValor) => {
-    const novaLista = [...bebidas];
-    novaLista[index] = novoValor;
-    setBebidas(novaLista);
-  };
-
-  return (
-    <div>
-      <div className="bg-sky-50 rounded-2xl p-5">
-        <h2 className="text-3xl mb-4">Bebidas</h2>
-
-        {bebidas.map((item, index) => (
-          <ShoppingItem
-            key={index}
-            item={item}
-            index={index}
-            onDelete={handleDelete}
-            onEdit={handleEdit}
-          />
-        ))}
-      </div>
-     
-    </div>
-  );
+  )
 }

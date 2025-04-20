@@ -1,20 +1,23 @@
 import { useState } from "react";
+import MainList from "../MainList";
+import { MdDeleteOutline } from "react-icons/md";
 
-function ShoppingDrinks({ Drinks, index, onDelete, onEdit }) {
+function ShoppingDrinks({ bebida, index, onDelete, onEdit, onToggle }) {
   return (
-    <div className="flex gap-2 mb-2">
-      <input type="checkbox" className="check" />
+    <div className={bebida.marcado ? "checked" : "unchecked"}>
+      <input
+        type="checkbox"
+        checked={bebida.marcado}
+        onChange={() => onToggle(index)}
+        className="check"
+      />
       <input
         type="text"
-        value={Drinks}
+        value={bebida.nome}
         onChange={(e) => onEdit(index, e.target.value)}
-        className="border px-2 rounded"
       />
-      <button
-        onClick={() => onDelete(index)}
-        className="bg-red-200 px-2 rounded"
-      >
-        X
+      <button onClick={() => onDelete(index)}>
+        <MdDeleteOutline />
       </button>
     </div>
   );
@@ -22,10 +25,10 @@ function ShoppingDrinks({ Drinks, index, onDelete, onEdit }) {
 
 export default function Drinks() {
   const [bebidas, setBebidas] = useState([
-    "Água",
-    "Suco",
-    "Refrigerante",
-    "Cerveja",
+    { nome: "Água", marcado: false },
+    { nome: "Suco", marcado: false },
+    { nome: "Refrigerante", marcado: false },
+    { nome: "Cerveja", marcado: false },
   ]);
 
   const handleDelete = (index) => {
@@ -35,26 +38,32 @@ export default function Drinks() {
 
   const handleEdit = (index, novoValor) => {
     const novaLista = [...bebidas];
-    novaLista[index] = novoValor;
+    novaLista[index].nome = novoValor;
+    setBebidas(novaLista);
+  };
+
+  const handleToggle = (index) => {
+    const novaLista = [...bebidas];
+    novaLista[index].marcado = !novaLista[index].marcado;
     setBebidas(novaLista);
   };
 
   return (
     <div>
-      <div className="bg-sky-50 rounded-2xl p-5">
-        <h2 className="text-3xl mb-4">Bebidas</h2>
-
-        {bebidas.map((Drinks, index) => (
+      <div className="max-w-82 flex flex-col bg-sky-200 p-1 justify-center rounded-sm mb-1 text-center">
+        <h2 className="text-3xl mb-4 text-gray-800 border-b-1">Bebidas</h2>
+        <MainList />
+        {bebidas.map((bebida, index) => (
           <ShoppingDrinks
             key={index}
-            Drinks={Drinks}
+            bebida={bebida}
             index={index}
             onDelete={handleDelete}
             onEdit={handleEdit}
+            onToggle={handleToggle}
           />
         ))}
       </div>
-     
     </div>
   );
 }
