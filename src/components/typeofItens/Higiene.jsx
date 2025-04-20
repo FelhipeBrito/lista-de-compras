@@ -1,20 +1,23 @@
 import { useState } from "react";
+import MainList from "../MainList";
+import { MdDeleteOutline } from "react-icons/md";
 
-function Shoppinghigiene({ higiene, index, onDelete, onEdit }) {
+function ShoppingHigiene({ item, index, onDelete, onEdit, onToggle }) {
   return (
-    <div className="flex gap-2 mb-2">
-      <input type="checkbox" className="check" />
+    <div className={item.marcado ? "checked" : "unchecked"}>
+      <input
+        type="checkbox"
+        checked={item.marcado}
+        onChange={() => onToggle(index)}
+        className="check"
+      />
       <input
         type="text"
-        value={higiene}
+        value={item.nome}
         onChange={(e) => onEdit(index, e.target.value)}
-        className="border px-2 rounded"
       />
-      <button
-        onClick={() => onDelete(index)}
-        className="bg-red-200 px-2 rounded"
-      >
-        X
+      <button onClick={() => onDelete(index)}>
+        <MdDeleteOutline />
       </button>
     </div>
   );
@@ -22,22 +25,22 @@ function Shoppinghigiene({ higiene, index, onDelete, onEdit }) {
 
 export default function Higiene() {
   const [higiene, setHigiene] = useState([
-    "Absorventes",
-    "Água oxigenada",
-    "Algodão",
-    "Barbeador",
-    "Curativos",
-    "Creme dental",
-    "Desodorante",
-    "Escova de dente",
-    "Esparadrapo",
-    "Fio dental",
-    "Gaze",
-    "Hastes flexíveis",
-    "Papel higiênico",
-    "Sabonete",
-    "Shampoo",
-    "Condicionador",
+    { nome: "Absorventes", marcado: false },
+    { nome: "Água oxigenada", marcado: false },
+    { nome: "Algodão", marcado: false },
+    { nome: "Barbeador", marcado: false },
+    { nome: "Curativos", marcado: false },
+    { nome: "Creme dental", marcado: false },
+    { nome: "Desodorante", marcado: false },
+    { nome: "Escova de dente", marcado: false },
+    { nome: "Esparadrapo", marcado: false },
+    { nome: "Fio dental", marcado: false },
+    { nome: "Gaze", marcado: false },
+    { nome: "Hastes flexíveis", marcado: false },
+    { nome: "Papel higiênico", marcado: false },
+    { nome: "Sabonete", marcado: false },
+    { nome: "Shampoo", marcado: false },
+    { nome: "Condicionador", marcado: false },
   ]);
 
   const handleDelete = (index) => {
@@ -47,22 +50,29 @@ export default function Higiene() {
 
   const handleEdit = (index, novoValor) => {
     const novaLista = [...higiene];
-    novaLista[index] = novoValor;
+    novaLista[index].nome = novoValor;
+    setHigiene(novaLista);
+  };
+
+  const handleToggle = (index) => {
+    const novaLista = [...higiene];
+    novaLista[index].marcado = !novaLista[index].marcado;
     setHigiene(novaLista);
   };
 
   return (
     <div>
-      <div className="bg-sky-50 rounded-2xl p-5">
-        <h2 className="text-3xl mb-4">Higiene</h2>
-
-        {higiene.map((higiene, index) => (
-          <Shoppinghigiene
+      <div className="max-w-82 flex flex-col bg-sky-200 p-1 justify-center rounded-sm mb-1 text-center">
+        <h2 className="text-3xl mb-4 text-gray-800 border-b-1">Higiene</h2>
+        <MainList />
+        {higiene.map((item, index) => (
+          <ShoppingHigiene
             key={index}
-            higiene={higiene}
+            item={item}
             index={index}
             onDelete={handleDelete}
             onEdit={handleEdit}
+            onToggle={handleToggle}
           />
         ))}
       </div>
