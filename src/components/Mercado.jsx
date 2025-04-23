@@ -10,22 +10,20 @@ import Obs from "./Obs";
 export default function Mercado() {
   return (
     <div className="main-container2">
-      
+
+      <div className="sub-container1">
         <Mercearia />
-        <Drinks />
-     
-     
         <Proteinas />
+        <Drinks />
         <Utilidades />
-    
-     
-        <Laticinios />
-        <Higiene />
-   
-     
+      </div>
+
+      <div className="sub-container2">
         <Limpeza />
+        <Higiene />
+        <Laticinios />
         <Obs />
-      
+      </div>
     </div>
   );
 }
