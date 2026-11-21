@@ -23,7 +23,6 @@ function parseMoney(input) {
   return Number.isFinite(n) && n >= 0 && n <= 10000000 ? Math.round(n * 100) : null;
 }
 const freshItem = (name, category) => ({id:crypto.randomUUID(), name:name.trim(), category, selected:true, checked:false, quantity:1, unit:'un', priceCents:null});
-const today = () => new Date().toLocaleDateString('pt-BR');
 const Count = ({children}) => <span className="counter">{children}</span>;
 
 function ItemRow({item, update, remove}) {
