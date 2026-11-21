@@ -1,12 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ShoppingBasket, Plus, Trash2, Search, Download, RotateCcw, History, X, CheckCircle2, Circle, ChevronDown, ChevronUp, Wallet, Upload } from 'lucide-react';
-import { CATEGORIES } from './data/catalog';
+import { CATEGORIES, createDefaultItems } from './data/catalog';
 import { loadData, normalizeData, saveData } from './services/storage';
 import { toMoney, sumCents, exportCsv, exportPdf, downloadBlob } from './services/export';
 
 const moneyInput = cents => cents === null ? '' : (cents / 100).toFixed(2).replace('.', ',');
 function parseMoney(input) {
-  const normalized = input.trim().replace(/\s/g, '').replace(/^R\$\s?/, '').replace(/\./g, '').replace(',', '.');
+  let normalized = input.trim().replace(/\s/g, '').replace(/^R\$/i, '');
+  if (!normalized) return null;
+  const comma = normalized.lastIndexOf(',');
+  const dot = normalized.lastIndexOf('.');
+  if (comma !== -1 && dot !== -1) {
+    normalized = comma > dot ? normalized.replace(/\./g, '').replace(',', '.') : normalized.replace(/,/g, '');
+  } else if (comma !== -1) {
+    normalized = normalized.replace(',', '.');
+  } else if (dot !== -1 && /^\d{1,3}(\.\d{3})+$/.test(normalized)) {
+    normalized = normalized.replace(/\./g, '');
+  }
+  if (!/^\d+(\.\d{0,2})?$/.test(normalized)) return null;
   if (!normalized) return null;
   const n = Number(normalized);
   return Number.isFinite(n) && n >= 0 && n <= 10000000 ? Math.round(n * 100) : null;
@@ -56,6 +67,20 @@ export default function App() {
   const [view,setView] = useState('shopping');
   const [exportMenu,setExportMenu] = useState(false);
   const [budgetDraft,setBudgetDraft] = useState('');
+  const [confirmAction,setConfirmAction] = useState(null);
+  const [notice,setNotice] = useState('');
+  const [installPrompt,setInstallPrompt] = useState(null);
+  const [installed,setInstalled] = useState(false);
+  useEffect(()=>{
+    const ready=e=>{e.preventDefault();setInstallPrompt(e);};
+    const completed=()=>{setInstalled(true);setInstallPrompt(null);};
+    window.addEventListener('beforeinstallprompt',ready);
+    window.addEventListener('appinstalled',completed);
+    return()=>{window.removeEventListener('beforeinstallprompt',ready);window.removeEventListener('appinstalled',completed);};
+  },[]);
+  const installApp=async()=>{if (!installPrompt) return;await installPrompt.prompt();await installPrompt.userChoice;setInstallPrompt(null);};
+  const requestConfirmation=(title,description,action)=>setConfirmAction({title,description,action});
+  const exportHistoryJson=record=>downloadBlob(JSON.stringify(record,null,2),'compra-'+record.date.slice(0,10)+'.json','application/json;charset=utf-8');
 
   useEffect(()=>{ let current=true; loadData().then(d=>{if(current){setData(d);setBudgetDraft(moneyInput(d.budgetCents));}}).catch(()=>{if(current)setLoadError('Não foi possível abrir os dados locais.');});return()=>{current=false;};},[]);
   useEffect(()=>{if(!data)return;const timer=setTimeout(()=>{saveData(data).then(()=>setSaveError('')).catch(()=>setSaveError('Não foi possível salvar. Exporte um backup e verifique o armazenamento do navegador.'));},400);return()=>clearTimeout(timer);},[data]);
@@ -70,13 +95,17 @@ export default function App() {
   const missingPrice = selected.filter(i=>i.priceCents===null).length;
   const finalize = () => {
     if(!selected.length)return;
-    if(!window.confirm('Finalizar esta compra, guardar no histórico e começar uma nova?'))return;
-    setData(current=>({...current,history:[{id:crypto.randomUUID(),date:new Date().toISOString(),items:current.items.filter(i=>i.selected).map(i=>({...i}))},...current.history].slice(0,100),items:current.items.map(i=>({...i,checked:false,priceCents:null,quantity:1})),notes:''}));
+    requestConfirmation('Finalizar compra','Salvar esta compra no histórico e preparar a próxima? Os produtos personalizados serão mantidos.',()=>{
+      setData(current=>({...current,history:[{id:crypto.randomUUID(),date:new Date().toISOString(),items:current.items.filter(i=>i.selected).map(i=>({...i}))},...current.history].slice(0,100),items:current.items.map(i=>({...i,checked:false,priceCents:null,quantity:1})),notes:''}));
+      setView('history');
+    });
   };
-  const reset = () => {
-    if(!window.confirm('Começar uma nova compra? Os preços e marcações serão apagados, mas o catálogo será mantido.'))return;
+  const reset = () => requestConfirmation('Reiniciar compra','Limpar preços, quantidades, marcações e observações? Seu catálogo e histórico serão preservados.',()=>{
     setData(current=>({...current,items:current.items.map(i=>({...i,checked:false,quantity:1,priceCents:null})),notes:''}));
-  };
+  });
+  const restoreCatalog=()=>requestConfirmation('Restaurar catálogo original','Substituir os produtos atuais pelos itens padrão? O histórico será preservado, mas as personalizações serão perdidas.',()=>{
+    setData(current=>({...current,items:createDefaultItems(),notes:''}));
+  });
   const exportBackup = ()=>downloadBlob(JSON.stringify({...data,exportedAt:new Date().toISOString()},null,2),'compras-backup.json','application/json;charset=utf-8');
   const importBackup = async event => {
     const file=event.target.files?.[0];event.target.value='';if(!file)return;
@@ -89,16 +118,19 @@ export default function App() {
     <header className="topbar"><div className="brand"><div className="brand-icon"><ShoppingBasket size={24}/></div><div><span className="eyebrow">SEU SUPERMERCADO ORGANIZADO</span><h1>Minhas Compras</h1></div></div><span className="offline-pill">Sem conta · Offline</span></header>
     <main>
       <div className="intro"><div><h2>{view==='shopping'?'Lista de supermercado':'Histórico de compras'}</h2><p>Controle seus produtos, quantidades e gastos em um só lugar.</p></div><div className="top-actions"><button className={`action-button ${view==='shopping'?'selected-action':''}`} onClick={()=>setView('shopping')}><ShoppingBasket size={18}/> Lista</button><button className={`action-button ${view==='history'?'selected-action':''}`} onClick={()=>setView('history')}><History size={18}/> Histórico</button></div></div>
-      {saveError&&<p className="warning" role="alert">{saveError}</p>}
+      {saveError&&<p className="warning" role="alert">{saveError}</p>}{notice&&<p className="warning" role="status">{notice} <button className="text-button" onClick={()=>setNotice('')}>Fechar</button></p>}
       {view==='shopping' ? <>
         <section className="summary" aria-label="Resumo da compra"><div className="summary-top"><div><span className="summary-caption">TOTAL ESTIMADO</span><h3>{toMoney(total)}</h3><span className="summary-description">{count} de {selected.length} produtos comprados</span></div><Wallet size={32} opacity={0.6}/></div><div className="progress-track"><div style={{width:`${selected.length?count/selected.length*100:0}%`}}/></div><div className="summary-bottom"><div><span>Comprado</span><strong>{toMoney(purchased)}</strong></div><div><span>Pendente</span><strong>{toMoney(total-purchased)}</strong></div></div>{missingPrice>0&&<p className="missing-price">{missingPrice} produto(s) ainda sem preço. O total pode estar incompleto.</p>}</section>
+        {data.budgetCents!==null&&total>data.budgetCents&&<div className="budget-warning" role="alert"><Wallet size={22}/><div><strong>Orçamento excedido em {toMoney(total-data.budgetCents)}</strong><span>Você ultrapassou o limite de {toMoney(data.budgetCents)}. Revise os preços ou ajuste seu orçamento.</span></div></div>}
         <div className="utility-row"><label className="budget-field">Orçamento (R$)<input type="text" inputMode="decimal" placeholder="Opcional" value={budgetDraft} onChange={e=>setBudgetDraft(e.target.value)} onBlur={()=>setData(current=>({...current,budgetCents:parseMoney(budgetDraft)}))}/></label><span className="budget-status">{data.budgetCents===null?'Defina um limite opcional':total>data.budgetCents?`${toMoney(total-data.budgetCents)} acima do limite`:`${toMoney(data.budgetCents-total)} disponíveis`}</span></div>
-        <div className="toolbar"><div className="export-wrapper"><button className="action-button" onClick={()=>setExportMenu(!exportMenu)} aria-expanded={exportMenu}><Download size={18}/> Exportar <ChevronDown size={14}/></button>{exportMenu&&<div className="export-menu"><button onClick={()=>{exportCsv(selected);setExportMenu(false);}}>Planilha CSV</button><button onClick={async()=>{setExportMenu(false);try{await exportPdf(selected,data.notes);}catch{alert('Falha ao gerar PDF.');}}}>Documento PDF</button><button onClick={()=>{exportBackup();setExportMenu(false);}}>Backup JSON</button><label className="import-label"><Upload size={16}/> Importar backup JSON<input type="file" accept=".json,application/json" onChange={importBackup}/></label></div>}</div><button className="action-button" onClick={reset}><RotateCcw size={17}/> Reiniciar</button><button className="action-button primary-button" onClick={finalize} disabled={!selected.length}><CheckCircle2 size={17}/> Finalizar compra</button></div>
+        {installPrompt&&!installed&&<div className="install-banner"><span>Instale o aplicativo para abrir diretamente pelo seu dispositivo.</span><button className="action-button primary-button" onClick={installApp}>Instalar app</button></div>}
+        <div className="toolbar"><div className="export-wrapper"><button className="action-button" onClick={()=>setExportMenu(!exportMenu)} aria-expanded={exportMenu}><Download size={18}/> Exportar <ChevronDown size={14}/></button>{exportMenu&&<div className="export-menu"><button onClick={()=>{exportCsv(selected);setExportMenu(false);}}>Planilha CSV</button><button onClick={async()=>{setExportMenu(false);try{await exportPdf(selected,data.notes);}catch{alert('Falha ao gerar PDF.');}}}>Documento PDF</button><button onClick={()=>{exportBackup();setExportMenu(false);}}>Backup JSON</button><label className="import-label"><Upload size={16}/> Importar backup JSON<input type="file" accept=".json,application/json" onChange={importBackup}/></label></div>}</div><button className="action-button" onClick={reset}><RotateCcw size={17}/> Reiniciar compra</button><button className="action-button" onClick={restoreCatalog}>Restaurar catálogo</button><button className="action-button primary-button" onClick={finalize} disabled={!selected.length}><CheckCircle2 size={17}/> Finalizar compra</button></div>
         <div className="filter-bar"><div className="search"><Search size={19}/><input aria-label="Buscar produtos" placeholder="Buscar produtos..." value={query} onChange={e=>setQuery(e.target.value)}/>{query&&<button aria-label="Limpar busca" onClick={()=>setQuery('')}><X size={16}/></button>}</div><select aria-label="Filtrar por categoria" value={activeCategory} onChange={e=>setActiveCategory(e.target.value)}><option>Todas</option>{CATEGORIES.map(c=><option key={c}>{c}</option>)}</select><select aria-label="Filtrar por situação" value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">Todos</option><option value="pending">Pendentes</option><option value="bought">Comprados</option></select></div>
-        <div className="catalog-note"><div><strong>Catálogo de produtos</strong><p>Os produtos padrão já estão na sua lista. Edite os campos conforme compra.</p></div><button className="text-button" onClick={()=>{if(window.confirm('Excluir itens marcados como comprados?'))setData(current=>({...current,items:current.items.filter(i=>!i.checked)}));}}>Excluir comprados</button></div>
+        <div className="catalog-note"><div><strong>Catálogo de produtos</strong><p>Os produtos padrão já estão na sua lista. Edite os campos conforme compra.</p></div><button className="text-button" onClick={()=>requestConfirmation('Excluir produtos comprados','Excluir permanentemente os produtos marcados? Esta ação não altera o histórico.',()=>setData(current=>({...current,items:current.items.filter(i=>!i.checked)})))}>Excluir comprados</button></div>
         <div className="category-grid">{CATEGORIES.filter(c=>activeCategory==='Todas'||activeCategory===c).map(category=><Category key={category} category={category} items={filtered.filter(i=>i.category===category)} onUpdate={update} onRemove={remove} onAdd={add}/>)}</div>
         <section className="notes-card"><label htmlFor="notes">Observações</label><textarea id="notes" rows={4} placeholder="Anote marcas, promoções ou lembretes..." value={data.notes} onChange={e=>setData(current=>({...current,notes:e.target.value.slice(0,5000)}))}/></section>
-      </> : <div className="history-area"><h3>Compras concluídas <Count>{data.history.length}</Count></h3>{data.history.length===0?<div className="empty-history"><History size={36}/><p>Você ainda não finalizou nenhuma compra.</p></div>:data.history.map(record=><article className="history-card" key={record.id}><div><strong>{new Date(record.date).toLocaleDateString('pt-BR')||record.date}</strong><p>{record.items.length} produtos</p></div><div><strong>{toMoney(sumCents(record.items))}</strong><button className="text-button" onClick={()=>exportCsv(record.items)}>Exportar CSV</button><button className="icon-button" aria-label="Excluir registro" onClick={()=>{if(window.confirm('Excluir este registro do histórico?'))setData(current=>({...current,history:current.history.filter(h=>h.id!==record.id)}));}}><Trash2 size={16}/></button></div></article>)}</div>}
+      </> : <div className="history-area"><h3>Compras concluídas <Count>{data.history.length}</Count></h3>{data.history.length===0?<div className="empty-history"><History size={36}/><p>Você ainda não finalizou nenhuma compra.</p></div>:data.history.map(record=><article className="history-card" key={record.id}><div><strong>{new Date(record.date).toLocaleDateString('pt-BR')||record.date}</strong><p>{record.items.length} produtos</p></div><div><strong>{toMoney(sumCents(record.items))}</strong><button className="text-button" onClick={()=>exportCsv(record.items)}>CSV</button><button className="text-button" onClick={()=>exportPdf(record.items).catch(()=>setNotice("Não foi possível gerar o PDF."))}>PDF</button><button className="text-button" onClick={()=>exportHistoryJson(record)}>JSON</button><button className="icon-button" aria-label="Excluir registro" onClick={()=>requestConfirmation('Excluir compra do histórico','Esta exclusão é permanente. O catálogo atual não será alterado.',()=>setData(current=>({...current,history:current.history.filter(h=>h.id!==record.id)})))}><Trash2 size={16}/></button></div></article>)}</div>}
+      {confirmAction&&<div className="dialog-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setConfirmAction(null);}}><section className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="dialog-title" aria-describedby="dialog-description"><h3 id="dialog-title">{confirmAction.title}</h3><p id="dialog-description">{confirmAction.description}</p><div className="dialog-actions"><button className="action-button" autoFocus onClick={()=>setConfirmAction(null)}>Cancelar</button><button className="action-button primary-button" onClick={()=>{confirmAction.action();setConfirmAction(null);}}>Confirmar</button></div></section></div>}
     </main><footer>Seus dados ficam armazenados neste navegador. Faça backups regularmente.</footer>
   </div>;
 }
