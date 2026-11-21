@@ -18,16 +18,17 @@ Os dados são armazenados localmente em IndexedDB, usando `idb-keyval`. Não há
 ## Como funciona
 
 - O catálogo original é carregado na primeira visita e pode ser editado.
-- Edite quantidade, unidade (un/kg/L) e preço unitário de cada produto.
+- Edite quantidade, unidade (un/kg/L) e preço unitário de cada produto; o preço aceita ponto ou vírgula como separador decimal (ex.: 12.90 ou 12,90).
 - Um produto sem preço não participa da soma e é sinalizado no resumo.
-- **Finalizar compra** cria um registro no histórico e reinicia quantidade, marcação e preço, preservando o catálogo.
-- **Reiniciar** prepara uma nova compra sem criar histórico.
+- **Finalizar compra** cria um registro no histórico, abre o histórico e reinicia quantidade, marcação e preço, preservando o catálogo. Cada compra histórica pode ser exportada em CSV, PDF ou JSON.
+- **Reiniciar compra** prepara uma nova compra sem criar histórico. **Restaurar catálogo** substitui os produtos personalizados pelos itens padrão, preservando o histórico.
 - **Exportar** produz CSV (planilhas), PDF e JSON (backup completo).
+- O orçamento excedido aparece em destaque, e ações destrutivas do catálogo e do histórico usam confirmação personalizada.
 - Os dados da versão anterior em `localStorage.itens` são importados como itens adicionais de Utilidades quando possível. Como a versão antiga não persistia os produtos predefinidos, alterações antigas neles não podem ser restauradas.
 
 ## Deploy
 
-Hospedagem estática gratuita na Vercel, com build `npm run build` e diretório de saída `dist`. Para PWA, instale em HTTPS após publicar. O ícone SVG atende ao manifesto, mas alguns dispositivos podem exigir PNG em 192 e 512 pixels.
+Hospedagem estática gratuita na Vercel, com build `npm run build` e diretório de saída `dist`. Para PWA, instale em HTTPS após publicar. O manifesto possui ícones PNG de 192 e 512 pixels. Em navegadores compatíveis, a opção **Instalar app** aparece quando a instalação é disponibilizada; em outros, use a opção do menu do navegador.
 
 ## Limitações
 
